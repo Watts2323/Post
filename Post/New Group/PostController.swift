@@ -13,7 +13,7 @@ class PostController {
     //Shared Function, dont neeed to do this because there will be only one view controller, but it's good to get in the habbit
     //    static let sharedInstance: PostController()
     
-//    //Source of truth
+    //    //Source of truth
     var posts: [Post] = []
     
     static let baseURL = URL(string: "https://devmtn-posts.firebaseio.com/posts")
@@ -35,7 +35,7 @@ class PostController {
         
         // Step 3 - Data task + RESUME
         //This method will make the network call and call the completion closer with the data, URLResponse, and a error
-         URLSession.shared.dataTask(with: request) { (data, _, error) in
+        URLSession.shared.dataTask(with: request) { (data, _, error) in
             
             //Checking for the error and if there is one then we will Handle it. Also we are using if let because we dont want to jump out the function if the error is nil
             if let error = error {
@@ -51,19 +51,42 @@ class PostController {
                 for (_, value) in postDictionary {
                     posts.append(value)
                 }
-                
                 completion(posts)
-                
             } catch let error {
                 print("There was an error in \(#function) ; \(error) ; \(error.localizedDescription) ")
-                
             }
-            
-            
-            
-            
             //Cant forget this or the network call wont work.
             }.resume()
     }
     
+    static func addNewPostWith(userName: String, text: String, completion: @escaping ([Post]?) -> Void) {
+        let post = Post(text: text, username: userName)
+        let postData = Data()
+        
+        guard let postEndpoint = PostController.baseURL?.appendingPathExtension("json") else { return}
+        
+        let encoder = JSONEncoder()
+        do {
+            let postdata = try encoder.encode(post)
+        } catch {
+            print("There was an error in \(#function) ; \(error) ; \(error.localizedDescription) ")        }
+        var request = URLRequest(url: postEndpoint)
+        request.httpBody = postData
+        request.httpMethod = "POST"
+        
+        URLSession.shared.dataTask(with: request) { (data, _, error) in
+            if let error = error {
+                print("There was an error in \(#function) ; \(error) ; \(error.localizedDescription) ")
+                completion([])
+            }
+            guard let data = data else {completion([]); return}
+            if let objectString = String(data: data, encoding: .utf8) {
+                print(objectString)
+                completion(nil);return
+            }
+            var posts = [Post]()
+            posts.append(post)
+            completion(posts)
+        }
+    }
 }
